@@ -88,17 +88,19 @@ class UIMode:
 
 
 class CodeMode(UIMode):
-    def __init__(self):
+    def __init__(self, context):
         self.line_len = 1
+        self.context = context
         self.x = 0
         self.navigation = {
-            Motion.UP:    (lambda: - context.cursor_x - 1 - 0*self.prev_line_len),
+            Motion.UP:    (lambda: - context.cursor_x - 1 - 0 * self.prev_line_len),
             Motion.DOWN:  (lambda: self.line_len - context.cursor_x),
             Motion.LEFT:  (lambda: -1),
             Motion.RIGHT: (lambda: 1),
         }
 
     def draw(self, screen, key):
+        context = self.context
         if not hasattr(context, "opcodes"):
             return
 
@@ -152,8 +154,9 @@ class CodeMode(UIMode):
 
 
 class HexMode(UIMode):
-    def __init__(self):
+    def __init__(self, context):
         self.line_len = 16
+        self.context = context
         self.navigation = {
             Motion.UP:    (lambda: -self.line_len),
             Motion.DOWN:  (lambda: self.line_len),
@@ -162,6 +165,7 @@ class HexMode(UIMode):
         }
 
     def draw(self, screen, key):
+        context = self.context
         self.move_cursor(context, key)
 
         # Draw column addresses on the top:
@@ -232,7 +236,7 @@ def pad_str(s, width):
     return s + " " * (width - len(s))
 
 
-def draw_header(screen):
+def draw_header(screen, context):
     with SaveExcursion(screen):
         percentage = f"{100 * context.address / context.filesize:.1f}%"
         header_str = pad_str(f"Selected : 00000000h - -= {PROGRAM_NAME} {VERSION}"
@@ -251,7 +255,7 @@ def draw_header(screen):
                       curses.color_pair(COLOR_ADDRESS_HIGHLIGHT))
 
 
-def draw_menu(screen, menu):
+def draw_menu(screen, menu, context):
     with SaveExcursion(screen):
         x = 0
         for number, text in menu.items():
@@ -269,7 +273,7 @@ def draw_menu(screen, menu):
                       curses.color_pair(COLOR_MENU_WORDS))
 
 
-def draw_ui(screen):
+def draw_ui(screen, context):
     key = None
     context.cursor_x = 0
     context.cursor_y = 0
@@ -323,7 +327,7 @@ def format_filesize(size):
         return size
 
 
-def load_file(filename):
+def load_file(filename, context):
     context.filename = filename
     context.file = open(filename, "rb")
     context.filesize = os.path.getsize(filename)
@@ -341,10 +345,10 @@ def main():
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <filename>")
     else:
-        global context
+        #global context
         context = HexItchContext()
-        load_file(sys.argv[1])
-        curses.wrapper(draw_ui)
+        load_file(sys.argv[1], context)
+        curses.wrapper(draw_ui, context=context)
 
 
 if __name__ == "__main__":
